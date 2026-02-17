@@ -1,5 +1,6 @@
 require('dotenv').config();
-const { Client } = require('discord.js-selfbot-v13');
+const { Client, SpotifyRPC } = require('discord.js-selfbot-v13');
+const { NARUTO_SHIPPUDEN_PLAYLIST } = require('./narutoPlaylist');
 
 const VALID_STATUSES = ['online', 'idle', 'dnd', 'invisible'];
 
@@ -9,7 +10,14 @@ const accounts = Object.entries(process.env)
   .map(([key, value]) => {
     const suffix = key.replace('TOKEN_', '');
     const status = (process.env[`STATUS_${suffix}`] || 'online').trim().toLowerCase();
-    return { token: value.trim(), status: VALID_STATUSES.includes(status) ? status : 'online' };
+    const spotifyRaw = (process.env[`SPOTIFY_${suffix}`] || 'true').trim().toLowerCase();
+    const spotifyEnabled = spotifyRaw === 'true' || spotifyRaw === '1' || spotifyRaw === 'yes';
+    return {
+      token: value.trim(),
+      status: VALID_STATUSES.includes(status) ? status : 'online',
+      spotifyEnabled,
+      suffix,
+    };
   })
   .filter(({ token }) => Boolean(token));
 
@@ -18,19 +26,81 @@ if (accounts.length === 0) {
   process.exit(1);
 }
 
-for (const { token, status } of accounts) {
+/**
+ * Fisher-Yates shuffle — returns a new shuffled copy of the array.
+ */
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Build and set the Spotify RPC presence for a given song index.
+ * When all songs finish, re-shuffles and starts again.
+ */
+function playSong(client, playlist, songIndex, status) {
+  const song = playlist[songIndex];
+  const now = Date.now();
+
+  const spotify = new SpotifyRPC(client)
+    .setAssetsLargeImage(`spotify:${song.imageId}`)
+    .setAssetsLargeText(song.album)
+    .setState(song.artist)
+    .setDetails(song.title)
+    .setStartTimestamp(now)
+    .setEndTimestamp(now + song.durationMs)
+    .setSongId(song.trackId);
+
+  client.user.setPresence({
+    activities: [spotify],
+    status,
+  });
+
+  console.log(
+    `${client.user.username}: Now playing [${song.op}] "${song.title}" by ${song.artist} (${Math.floor(song.durationMs / 1000)}s)`,
+  );
+
+  // Schedule the next song when this one ends
+  const nextIndex = songIndex + 1;
+  const timer = setTimeout(() => {
+    if (nextIndex < playlist.length) {
+      playSong(client, playlist, nextIndex, status);
+    } else {
+      // Re-shuffle and loop from the beginning
+      const reshuffled = shuffleArray(playlist);
+      console.log(`${client.user.username}: Playlist finished — reshuffling and restarting!`);
+      playSong(client, reshuffled, 0, status);
+    }
+  }, song.durationMs);
+
+  // Store timer reference on client so it can be cleaned up
+  client._spotifyTimer = timer;
+
+  return timer;
+}
+
+for (const { token, status, spotifyEnabled, suffix } of accounts) {
   const client = new Client();
 
   client.on('ready', async () => {
-    console.log(`${client.user.username} is ready! (status: ${status})`);
+    console.log(`${client.user.username} is ready! (status: ${status}, spotify: ${spotifyEnabled})`);
 
-    // Clear all activities (removes Spotify RPC & custom status)
-    client.user.setPresence({
-      activities: [],
-      status,
-    });
-
-    // console.log(`${client.user.username}: Cleared status & Spotify, set online.`);
+    if (spotifyEnabled) {
+      // Each client gets its own shuffled copy of the playlist
+      const shuffled = shuffleArray(NARUTO_SHIPPUDEN_PLAYLIST);
+      console.log(`${client.user.username}: Shuffled playlist — first up: "${shuffled[0].title}"`);
+      playSong(client, shuffled, 0, status);
+    } else {
+      // Clear all activities (removes Spotify RPC & custom status)
+      client.user.setPresence({
+        activities: [],
+        status,
+      });
+    }
   });
 
   client.login(token).catch(err => {
