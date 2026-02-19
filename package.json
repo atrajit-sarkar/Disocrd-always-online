@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "start": "node main.js"
+  },
+  "engines": {
+    "node": ">=20.18.0"
+  },
   "dependencies": {
     "debug": "^4.4.3",
     "discord.js-selfbot-v13": "^3.7.1",
