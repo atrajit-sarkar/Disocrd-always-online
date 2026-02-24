@@ -12,10 +12,12 @@ const accounts = Object.entries(process.env)
     const status = (process.env[`STATUS_${suffix}`] || 'online').trim().toLowerCase();
     const spotifyRaw = (process.env[`SPOTIFY_${suffix}`] || 'true').trim().toLowerCase();
     const spotifyEnabled = spotifyRaw === 'true' || spotifyRaw === '1' || spotifyRaw === 'yes';
+    const voiceChannelId = (process.env[`VOICE_${suffix}`] || '').trim() || null;
     return {
       token: value.trim(),
       status: VALID_STATUSES.includes(status) ? status : 'online',
       spotifyEnabled,
+      voiceChannelId,
       suffix,
     };
   })
@@ -83,11 +85,40 @@ function playSong(client, playlist, songIndex, status) {
   return timer;
 }
 
-for (const { token, status, spotifyEnabled, suffix } of accounts) {
+/**
+ * Join a voice channel and auto-rejoin on disconnect.
+ */
+function joinVoice(client, channelId) {
+  const channel = client.channels.cache.get(channelId);
+  if (!channel || !channel.isVoice()) {
+    console.warn(`${client.user.username}: Voice channel ${channelId} not found or not a voice channel.`);
+    return;
+  }
+
+  channel
+    .join()
+    .then(connection => {
+      console.log(`${client.user.username}: Joined voice channel #${channel.name} (${channelId})`);
+
+      connection.on('disconnect', () => {
+        console.log(`${client.user.username}: Disconnected from voice — rejoining in 5s...`);
+        setTimeout(() => joinVoice(client, channelId), 5_000);
+      });
+    })
+    .catch(err => {
+      console.error(`${client.user.username}: Failed to join voice channel ${channelId}:`, err.message);
+      // Retry after 10s on failure
+      setTimeout(() => joinVoice(client, channelId), 10_000);
+    });
+}
+
+for (const { token, status, spotifyEnabled, voiceChannelId, suffix } of accounts) {
   const client = new Client();
 
   client.on('ready', async () => {
-    console.log(`${client.user.username} is ready! (status: ${status}, spotify: ${spotifyEnabled})`);
+    console.log(
+      `${client.user.username} is ready! (status: ${status}, spotify: ${spotifyEnabled}, voice: ${voiceChannelId || 'none'})`,
+    );
 
     if (spotifyEnabled) {
       // Each client gets its own shuffled copy of the playlist
@@ -100,6 +131,11 @@ for (const { token, status, spotifyEnabled, suffix } of accounts) {
         activities: [],
         status,
       });
+    }
+
+    // Join voice channel if configured
+    if (voiceChannelId) {
+      joinVoice(client, voiceChannelId);
     }
   });
 
