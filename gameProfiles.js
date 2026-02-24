@@ -22,7 +22,7 @@ const GAME_PROFILES = {
     // App ID: 349040 (Storm 4)
     largeImage: 'https://cdn.akamai.steamstatic.com/steam/apps/349040/header.jpg',
     largeText: 'Naruto Storm 4 — Road to Boruto',
-    smallImage: 'https://cdn.akamai.steamstatic.com/steam/apps/349040/capsule_184x69.jpg',
+    smallImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/akatsuki-logo.png',
     smallText: 'Akatsuki',
     partySize: [6, 10],
     buttons: [
@@ -39,7 +39,7 @@ const GAME_PROFILES = {
     // App ID: 633230 (Shinobi Striker)
     largeImage: 'https://cdn.akamai.steamstatic.com/steam/apps/633230/header.jpg',
     largeText: 'Shinobi Striker — Healer Class',
-    smallImage: 'https://cdn.akamai.steamstatic.com/steam/apps/633230/capsule_184x69.jpg',
+    smallImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/akatsuki-logo.png',
     smallText: 'Akatsuki',
     partySize: [4, 8],
     buttons: [
@@ -53,10 +53,10 @@ const GAME_PROFILES = {
     name: 'Naruto Shippuden: Ultimate Ninja Impact',
     details: 'Story Mode — Chapter 9',
     state: 'Five Hearts Unleashed',
-    // Impact is a PSP game. Using App ID 580170 (Storm Legacy Collection) as a stable Steam CDN fallback.
-    largeImage: 'https://cdn.akamai.steamstatic.com/steam/apps/580170/header.jpg',
+    // Impact is a PSP game. Using a GitHub-hosted cover image.
+    largeImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/naruto-game.jpg',
     largeText: 'Ultimate Ninja Impact — PSP',
-    smallImage: 'https://cdn.akamai.steamstatic.com/steam/apps/580170/capsule_184x69.jpg',
+    smallImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/akatsuki-logo.png',
     smallText: 'Akatsuki',
     partySize: [3, 6],
     buttons: [
@@ -71,9 +71,9 @@ const GAME_PROFILES = {
     details: 'Ninja World Tournament — Finals',
     state: 'C4 Karura Unleashed 💥',
     // App ID: 272510 (Storm Revolution)
-    largeImage: 'https://cdn.akamai.steamstatic.com/steam/apps/272510/header.jpg',
+    largeImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/naruto-game.jpg',
     largeText: 'Storm Revolution',
-    smallImage: 'https://cdn.akamai.steamstatic.com/steam/apps/272510/capsule_184x69.jpg',
+    smallImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/akatsuki-logo.png',
     smallText: 'Akatsuki',
     partySize: [5, 8],
     buttons: [
@@ -88,9 +88,9 @@ const GAME_PROFILES = {
     details: 'Adventure Mode — War Arc',
     state: 'Red Secret Technique',
     // App ID: 234670 (Storm 3 Full Burst)
-    largeImage: 'https://cdn.akamai.steamstatic.com/steam/apps/234670/header.jpg',
+    largeImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/naruto-game.jpg',
     largeText: 'Storm 3 — Full Burst',
-    smallImage: 'https://cdn.akamai.steamstatic.com/steam/apps/234670/capsule_184x69.jpg',
+    smallImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/akatsuki-logo.png',
     smallText: 'Akatsuki',
     partySize: [4, 8],
     buttons: [
@@ -105,9 +105,9 @@ const GAME_PROFILES = {
     details: 'Free Battle — VS Mode',
     state: 'Paper Ocean Technique 🦋',
     // App ID: 543770 (Storm 2)
-    largeImage: 'https://cdn.akamai.steamstatic.com/steam/apps/543770/header.jpg',
+    largeImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/naruto-game.jpg',
     largeText: 'Storm 2 — Tale of Jiraiya the Gallant',
-    smallImage: 'https://cdn.akamai.steamstatic.com/steam/apps/543770/capsule_184x69.jpg',
+    smallImage: 'https://raw.githubusercontent.com/tnienow4-crypto/Images/main/akatsuki-logo.png',
     smallText: 'Akatsuki',
     partySize: [6, 10],
     buttons: [

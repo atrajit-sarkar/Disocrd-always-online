@@ -119,9 +119,35 @@ function joinVoice(client, channelId) {
     });
 }
 
+function normalizeImageUrl(url) {
+  if (!URL.canParse(url)) return url;
+  return new URL(url).toString();
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function resolvePresenceImage(client, applicationId, imageUrl, retries = 3) {
+  if (!imageUrl || !URL.canParse(imageUrl)) return null;
+  const normalizedUrl = normalizeImageUrl(imageUrl);
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const [externalAsset] = await RichPresence.getExternal(client, applicationId, normalizedUrl);
+      if (externalAsset?.external_asset_path) {
+        return `mp:${externalAsset.external_asset_path}`;
+      }
+      console.warn(`${client.user?.username}: getExternal returned no asset (attempt ${attempt}/${retries}) for ${imageUrl}`);
+    } catch (err) {
+      console.warn(`${client.user?.username}: getExternal failed (attempt ${attempt}/${retries}): ${err.message}`);
+    }
+    if (attempt < retries) await delay(2000 * attempt); // back off: 2s, 4s
+  }
+  return null;
+}
+
 /**
  * Build a full RichPresence "Playing" activity with images, party, details, and buttons.
- * Uses RichPresence.getExternal() to proxy the cover image through Discord's CDN.
+ * Resolves each image independently so one bad URL does not break the other.
  */
 async function buildGamePresence(client, profile) {
   const rpc = new RichPresence(client)
@@ -136,28 +162,39 @@ async function buildGamePresence(client, profile) {
       max: profile.partySize[1],
     });
 
-  // Resolve external images through a known Discord application
+  // Resolve images through a known Discord application
   const APP_ID = '363445589247131668'; // A public RPC-enabled app
-  try {
-    const external = await RichPresence.getExternal(
-      client,
-      APP_ID,
-      profile.largeImage,
-      profile.smallImage,
-    );
-    if (external?.[0]?.external_asset_path) {
-      rpc.setAssetsLargeImage(`mp:${external[0].external_asset_path}`);
-      rpc.setAssetsLargeText(profile.largeText);
-    }
-    if (external?.[1]?.external_asset_path) {
-      rpc.setAssetsSmallImage(`mp:${external[1].external_asset_path}`);
-      rpc.setAssetsSmallText(profile.smallText || 'Akatsuki');
-    }
-  } catch {
-    console.warn(`${client.user.username}: Could not load external game images, continuing without.`);
-  }
 
   rpc.setApplicationId(APP_ID);
+
+  try {
+    const resolvedLarge = await resolvePresenceImage(client, APP_ID, profile.largeImage);
+    if (resolvedLarge) {
+      rpc.setAssetsLargeImage(resolvedLarge);
+      rpc.setAssetsLargeText(profile.largeText);
+      console.log(`${client.user.username}: ✓ Large image resolved`);
+    } else {
+      console.warn(`${client.user.username}: ✗ Large image could not be resolved for: ${profile.largeImage}`);
+    }
+  } catch (err) {
+    console.warn(`${client.user.username}: Could not load large game image (${err.message}), continuing without it.`);
+  }
+
+  // Small delay between image resolutions to avoid rate-limiting
+  await delay(1500);
+
+  try {
+    const resolvedSmall = await resolvePresenceImage(client, APP_ID, profile.smallImage);
+    if (resolvedSmall) {
+      rpc.setAssetsSmallImage(resolvedSmall);
+      rpc.setAssetsSmallText(profile.smallText || 'Akatsuki');
+      console.log(`${client.user.username}: ✓ Small image resolved`);
+    } else {
+      console.warn(`${client.user.username}: ✗ Small image could not be resolved for: ${profile.smallImage}`);
+    }
+  } catch (err) {
+    console.warn(`${client.user.username}: Could not load small game image (${err.message}), continuing without it.`);
+  }
 
   // Add clickable buttons
   if (profile.buttons?.length) {
@@ -171,7 +208,13 @@ async function buildGamePresence(client, profile) {
   return rpc;
 }
 
+// Stagger logins to avoid rate-limiting on getExternal API calls
+let loginDelay = 0;
 for (const { token, status, spotifyEnabled, voiceChannelId, textStatus, game, suffix } of accounts) {
+  const currentDelay = loginDelay;
+  loginDelay += 3000; // 3 seconds between each account login
+
+  setTimeout(() => {
   const client = new Client();
 
   client.on('ready', async () => {
@@ -226,4 +269,5 @@ for (const { token, status, spotifyEnabled, voiceChannelId, textStatus, game, su
   client.login(token).catch(err => {
     console.error(`Failed to login with token ...${token.slice(-6)}:`, err.message);
   });
+  }, currentDelay);
 }
