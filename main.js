@@ -1,7 +1,27 @@
 require('dotenv').config();
 const { Client, SpotifyRPC, CustomStatus, RichPresence } = require('discord.js-selfbot-v13');
-const { NARUTO_SHIPPUDEN_PLAYLIST } = require('./narutoPlaylist');
-const { GAME_PROFILES } = require('./gameProfiles');
+
+// ── Theme switching via THEME env variable ──────────────────────
+// Set THEME=re9 in .env to run Resident Evil 9 themed version
+// Set THEME=naruto (or leave empty) to run Naruto Shippuden themed version
+const THEME = (process.env.THEME || 'naruto').trim().toLowerCase();
+
+let PLAYLIST;
+let GAME_PROFILES;
+
+if (THEME === 're9') {
+  const { RE9_PLAYLIST } = require('./re9/re9Playlist');
+  const re9Profiles = require('./re9/gameProfiles');
+  PLAYLIST = RE9_PLAYLIST;
+  GAME_PROFILES = re9Profiles.GAME_PROFILES;
+  console.log('🧟 Theme: Resident Evil 9 — Survival Horror mode activated!');
+} else {
+  const { NARUTO_SHIPPUDEN_PLAYLIST } = require('./naruto-shippuden/narutoPlaylist');
+  const narutoProfiles = require('./naruto-shippuden/gameProfiles');
+  PLAYLIST = NARUTO_SHIPPUDEN_PLAYLIST;
+  GAME_PROFILES = narutoProfiles.GAME_PROFILES;
+  console.log('🍥 Theme: Naruto Shippuden — Akatsuki mode activated!');
+}
 
 const VALID_STATUSES = ['online', 'idle', 'dnd', 'invisible'];
 
@@ -157,7 +177,7 @@ async function buildGamePresence(client, profile) {
     .setState(profile.state)
     .setStartTimestamp(Date.now())
     .setParty({
-      id: `akatsuki_${client.user.id}`,
+      id: `${THEME}_${client.user.id}`,
       current: profile.partySize[0],
       max: profile.partySize[1],
     });
@@ -249,7 +269,7 @@ for (const { token, status, spotifyEnabled, voiceChannelId, textStatus, game, su
 
     if (spotifyEnabled) {
       // Each client gets its own shuffled copy of the playlist
-      const shuffled = shuffleArray(NARUTO_SHIPPUDEN_PLAYLIST);
+      const shuffled = shuffleArray(PLAYLIST);
       console.log(`${client.user.username}: Shuffled playlist — first up: "${shuffled[0].title}"`);
       playSong(client, shuffled, 0, status, extraActivities);
     } else {
